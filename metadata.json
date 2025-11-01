@@ -1,0 +1,5 @@
+{
+  "name": "Sales Forecaster Pro",
+  "description": "An advanced sales forecasting application that allows users to filter historical sales data by store and product, and generate a sales forecast for the next quarter using a predictive model. The results are visualized in an interactive chart.",
+  "requestFramePermissions": []
+}
