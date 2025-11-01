@@ -138,6 +138,48 @@ const App: React.FC = () => {
         setForecastingMessage('');
     }
   }, [selectedStore, selectedProduct, allSalesData]);
+
+  const handleExportCsv = useCallback(() => {
+    if (!selectedStore || !selectedProduct) {
+        alert('Please select a store and a product to export.');
+        return;
+    }
+
+    const filteredData = allSalesData
+        .filter(d => d.store === selectedStore && d.product === selectedProduct)
+        .sort((a, b) => a.date.getTime() - b.date.getTime());
+
+    if (filteredData.length === 0) {
+        alert("No data available to export for the selected filters.");
+        return;
+    }
+
+    const headers = ['Date', 'Store', 'Product', 'Sales'];
+    const csvRows = [
+        headers.join(','),
+        ...filteredData.map(row => 
+            [
+                row.date.toISOString().split('T')[0], // Format date as YYYY-MM-DD
+                `"${row.store}"`,
+                `"${row.product}"`,
+                row.sales
+            ].join(',')
+        )
+    ];
+
+    const csvString = csvRows.join('\n');
+    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    const filename = `sales_data_${selectedStore.replace(/\s+/g, '_')}_${selectedProduct.replace(/\s+/g, '_')}.csv`;
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }, [selectedStore, selectedProduct, allSalesData]);
   
   const { totalForecast, growthPercentage, seasonalBaseline } = useMemo(() => {
     const forecastValues = chartData.filter(d => d.forecast !== undefined).map(d => d.forecast as number);
@@ -215,13 +257,25 @@ const App: React.FC = () => {
             <div className="md:col-span-1 lg:col-span-1">
               <FilterDropdown label="Product" value={selectedProduct} onChange={e => setSelectedProduct(e.target.value)} options={products} placeholder="Select a product" />
             </div>
-            <div className="md:col-span-1 lg:col-span-2 flex justify-start">
+            <div className="md:col-span-1 lg:col-span-2 flex flex-col sm:flex-row gap-2">
               <button
                 onClick={handleForecast}
                 disabled={!selectedStore || !selectedProduct || isForecasting}
-                className="w-full md:w-auto bg-cyan-600 hover:bg-cyan-500 disabled:bg-slate-600 disabled:cursor-not-allowed text-white font-bold py-2 px-6 rounded-md transition duration-300 shadow-md disabled:shadow-none"
+                className="w-full sm:w-auto flex-shrink-0 bg-cyan-600 hover:bg-cyan-500 disabled:bg-slate-600 disabled:cursor-not-allowed text-white font-bold py-2 px-6 rounded-md transition duration-300 shadow-md disabled:shadow-none"
+                aria-label="Generate sales forecast"
               >
                 Generate Forecast
+              </button>
+              <button
+                onClick={handleExportCsv}
+                disabled={!selectedStore || !selectedProduct}
+                className="w-full sm:w-auto flex-shrink-0 bg-slate-700 hover:bg-slate-600 disabled:bg-slate-600 disabled:cursor-not-allowed text-white font-bold py-2 px-6 rounded-md transition duration-300 shadow-md disabled:shadow-none flex items-center justify-center gap-2"
+                aria-label="Export filtered data to CSV"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+                Export CSV
               </button>
             </div>
           </div>
